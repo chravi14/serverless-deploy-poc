@@ -44,8 +44,8 @@ jobs:
         with:
           node-version: 14
 
-      # - name: Install serverless framework
-      #   run: npm install -g serverless
+      - name: Install serverless framework
+        run: npm install -g serverless@3
 
       - name: Configure AWS credentials and stage (dev)
         if: endsWith(github.ref, '/dev')
