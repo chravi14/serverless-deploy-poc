@@ -1,0 +1,30 @@
+service: service-c
+frameworkVersion: "3"
+
+provider:
+  name: aws
+  runtime: nodejs14.x
+  stage: ${opt:stage, 'dev'}
+  region: us-east-1
+
+functions:
+  hello:
+    handler: handler.hello
+    events:
+      - http:
+          method: GET
+          path: /hello
+          cors: true
+
+resources:
+  Resources:
+    NewResource:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:service}-my-new-bucket-${self:provider.stage}
+
+
+plugins:
+  - serverless-bundle
+  - serverless-iam-roles-per-function
+  - serverless-offline 
