@@ -6,7 +6,7 @@ export const hello = async (event, context, callback) => {
 
   return formatResponse(
     200,
-    { id: uid, message: "1. Generated using short-unique-id pkg" },
+    { id: uid, message: "2. Generated using short-unique-id pkg" },
     undefined
   );
 };

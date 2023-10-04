@@ -84,8 +84,8 @@ jobs:
 
           deploy_service() {
               local service=$1
-              # local dependencies=($(jq -r --arg key "$service" '.[$key] | .[]' service-dependencies.json))
-              local dependencies=${SERVICE_DEPENDENCIES[$service]}
+              local dependencies=($(jq -r --arg key "$service" '.[$key] | .[]' service-dependencies.json))
+              # local dependencies=${SERVICE_DEPENDENCIES[$service]}
               
               for dependency in ${dependencies[@]}
               do
