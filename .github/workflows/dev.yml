@@ -39,6 +39,38 @@ jobs:
           echo "Modified services: ${MODIFIED_SERVICES[@]}"
           echo "::set-output name=services::${MODIFIED_SERVICES[@]}"
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 14
+
+      - name: Install serverless framework
+        run: npm install -g serverless
+
+      - name: Configure AWS credentials and stage (dev)
+        if: endsWith(github.ref, '/dev')
+        run: |
+          echo "STAGE=dev" >> $GITHUB_ENV
+          echo "AWS_ACCESS_KEY_ID=AWS_ACCESS_KEY_ID_DEV" >> $GITHUB_ENV
+          echo "AWS_SECRET_ACCESS_KEY=AWS_SECRET_ACCESS_KEY_DEV" >> $GITHUB_ENV
+
+      - name: Configure AWS credentials and stage (prod)
+        if: endsWith(github.ref, '/main')
+        run: |
+          echo "STAGE=prod" >> $GITHUB_ENV
+          echo "AWS_ACCESS_KEY_ID=AWS_ACCESS_KEY_ID_PROD" >> $GITHUB_ENV
+          echo "AWS_SECRET_ACCESS_KEY=AWS_SECRET_ACCESS_KEY_PROD" >> $GITHUB_ENV
+
+      - name: Install packages in root folder
+        run: |
+          if [ -e yarn.lock ]; then
+            yarn install --frozen-lockfile
+          elif [ -e package-lock.json ]; then
+            npm ci
+          else
+            npm i --also=dev
+          fi
+
       - name: Deployment
         run: |
           # Parse the modified services from the previous step
@@ -71,6 +103,7 @@ jobs:
               if [[ ! "${DEPLOYED[@]}" =~ "$service" ]] && [[ "${MODIFIED_SERVICES[@]}" =~ "$service" ]]
               then
                   echo "Deploying service: $service"
+                  cd $service && npm install --also=dev && npm list -g && npm list && serverless deploy --stage=${{secrets[env.STAGE]}}
                   DEPLOYED+=("$service")
               else
                   echo "$service already deployed or not in modified list"
