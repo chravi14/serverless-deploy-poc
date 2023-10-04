@@ -1,0 +1,84 @@
+name: Github Action workflow for deploying multiple services - poc
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+
+jobs:
+  detect-changes:
+    name: Job to Detect changed folder or files
+    runs-on: ubuntu-latest
+    outputs:
+      modified_files: ${{ steps.modified.outputs.all_changed_files }}
+      modified_folders: ${{steps.filter.outputs.modified_folders}}
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+
+      - name: Get Changed files
+        id: modified
+        uses: tj-actions/changed-files@v35
+
+      - name: Set matrix for build
+        id: modified-services
+        run: |
+          MODIFIED_SERVICES=()
+          for file in ${{ steps.modified.outputs.all_changed_files }}
+          do
+            directory="$( echo $file | cut -d'/' -f1 -s )"
+            if [[ "$directory" != ".github" && "$directory" != "" && "$directory" != "shared" ]]
+            then
+              if [[ ! "${MODIFIED_SERVICES[@]}" =~ "$directory" ]]
+              then
+                MODIFIED_SERVICES+=("$directory")
+              fi
+            fi
+          done
+          echo "Modified services: ${MODIFIED_SERVICES[@]}"
+          echo "::set-output name=services::${MODIFIED_SERVICES[@]}"
+
+      - name: Deployment
+        run: |
+          # Parse the modified services from the previous step
+          MODIFIED_SERVICES=("${{ steps.modified-services.outputs.services }}")
+          echo "Modified services: ${MODIFIED_SERVICES[@]}"
+
+          # Initialize a set to keep track of deployed services and dependencies
+          DEPLOYED=()
+
+          deploy_service() {
+              local service=$1
+              local dependencies=($(jq -r --arg key "$service" '.[$key] | .[]' service-dependencies.json))
+              
+              for dependency in ${dependencies[@]}
+              do
+                  if [[ ! "${DEPLOYED[@]}" =~ "$dependency" ]] && [[ "${MODIFIED_SERVICES[@]}" =~ "$dependency" ]]
+                  then
+                      echo "$dependency is not deployed and is in modified list - so deploying it"
+                      deploy_service $dependency
+                      DEPLOYED+=("$dependency")
+                  elif [[ "${DEPLOYED[@]}" =~ "$dependency" ]]
+                  then
+                      echo "$dependency is already deployed, so skipping"
+                  else
+                      echo "$dependency is not in modified services, so not deploying"
+                  fi
+              done
+
+              
+              if [[ ! "${DEPLOYED[@]}" =~ "$service" ]] && [[ "${MODIFIED_SERVICES[@]}" =~ "$service" ]]
+              then
+                  echo "Deploying service: $service"
+                  DEPLOYED+=("$service")
+              else
+                  echo "$service already deployed or not in modified list"
+              fi
+          }
+
+          for service in ${MODIFIED_SERVICES[@]}
+          do
+              echo "Initializing deploy for $service"
+              deploy_service $service
+          done
