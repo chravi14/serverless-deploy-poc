@@ -6,7 +6,7 @@ export const hello = async (event, context, callback) => {
 
   return formatResponse(
     200,
-    { id: uid, message: "Generated using uniqid pkg" },
+    { id: uid, message: "2. Generated using uniqid pkg" },
     undefined
   );
 };
