@@ -67,6 +67,9 @@ jobs:
             npm i --also=dev
           fi
 
+      - name: Configuring Custom Domain
+        run: serverless create_domain --stage=dev --verbose
+
       - name: Deployment
         run: |
           # Parse the modified services from the previous step
