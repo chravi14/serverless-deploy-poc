@@ -1,12 +1,12 @@
-import uniqid from "uniqid";
+import { Ulid } from "id128";
 import { formatResponse } from "../shared";
 
 export const hello = async (event, context, callback) => {
-  const uid = new uniqid();
+  const uid = Ulid.generate();
 
   return formatResponse(
     200,
-    { id: uid, message: "2. Generated using uniqid pkg" },
+    { id: uid?.toRaw(), message: "3. Generated using uniqid pkg" },
     undefined
   );
 };
