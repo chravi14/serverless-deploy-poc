@@ -6,7 +6,6 @@ provider:
   runtime: nodejs14.x
   stage: ${opt:stage, 'dev'}
   region: us-east-1
-  endpointType: REGIONAL
 
 functions:
   hello:

@@ -6,7 +6,6 @@ provider:
   runtime: nodejs14.x
   stage: ${opt:stage, 'dev'}
   region: us-east-1
-  endpointType: REGIONAL
 
 functions:
   hello:
@@ -23,7 +22,6 @@ resources:
       Type: AWS::S3::Bucket
       Properties:
         BucketName: ${self:service}-my-new-bucket-${self:provider.stage}
-
 
 plugins:
   - serverless-bundle
