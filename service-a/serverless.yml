@@ -27,13 +27,13 @@ plugins:
   - serverless-bundle
   - serverless-iam-roles-per-function
   - serverless-offline
-#   - serverless-domain-manager
+  - serverless-domain-manager
 
-# custom:
-#   customDomain:
-#     domainName: api-dev.ravilearnings.com
-#     basePath: "v1/service-a" # This will be prefixed to all routes
-#     stage: ${self:provider.stage}
-#     certificateName: api-dev.ravilearnings.com
-#     createRoute53Record: false
-#     endpointType: regional
+custom:
+  customDomain:
+    domainName: api-dev.ravilearnings.com
+    basePath: "v1/service-a" # This will be prefixed to all routes
+    stage: ${self:provider.stage}
+    certificateName: api-dev.ravilearnings.com
+    createRoute53Record: false
+    endpointType: regional
