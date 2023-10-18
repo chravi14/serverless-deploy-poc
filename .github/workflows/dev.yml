@@ -67,8 +67,19 @@ jobs:
             npm i --also=dev
           fi
 
-      # - name: Configuring Custom Domain
-      #   run: serverless create_domain --stage=dev --verbose
+      - name: Install Dependencies in modified service folders
+        run: |
+          # List of folders in which you want to run npm install
+          MODIFIED_SERVICES=("${{ steps.modified-services.outputs.services }}")
+
+          for folder in "${MODIFIED_SERVICES[@]}"; do
+            if [ -d "$folder" ]; then
+              (cd "$folder" && npm install)
+            else
+              echo "Folder $folder not found."
+            fi
+            cd ..
+          done
 
       - name: Deployment
         run: |
@@ -105,7 +116,7 @@ jobs:
               if [[ ! "${DEPLOYED[@]}" =~ "$service" ]] && [[ "${MODIFIED_SERVICES[@]}" =~ "$service" ]]
               then
                   echo "Deploying service: $service"
-                  cd $service && npm install --also=dev && npm list -g && npm list && serverless deploy --stage=dev --verbose
+                  cd $service && serverless deploy --stage=dev --verbose
                   echo "Switching back to root folder"
                   cd ../
                   DEPLOYED+=("$service")
