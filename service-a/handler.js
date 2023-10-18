@@ -8,7 +8,7 @@ export const hello = async (event, context, callback) => {
     200,
     {
       id: uid,
-      message: "7. Generated using short-unique-id pkg",
+      message: "8. Generated using short-unique-id pkg",
       bucketNames: [
         process.env.serviceBS3BucketName,
         process.env.serviceCS3BucketName,
