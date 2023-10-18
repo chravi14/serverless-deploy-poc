@@ -10,6 +10,11 @@ provider:
 functions:
   hello:
     handler: handler.hello
+    environment:
+      serviceBS3BucketName:
+        - Fn::ImportValue: !Sub ServiceBS3Bucket-${self:provider.stage}
+      serviceCS3BucketName:
+        - Fn::ImportValue: !Sub ServiceCS3Bucket-${self:provider.stage}
     events:
       - http:
           method: GET

@@ -6,7 +6,14 @@ export const hello = async (event, context, callback) => {
 
   return formatResponse(
     200,
-    { id: uid, message: "7. Generated using short-unique-id pkg" },
+    {
+      id: uid,
+      message: "7. Generated using short-unique-id pkg",
+      bucketNames: [
+        process.env.serviceBS3BucketName,
+        process.env.serviceCS3BucketName,
+      ],
+    },
     undefined
   );
 };
