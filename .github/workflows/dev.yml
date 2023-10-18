@@ -73,11 +73,8 @@ jobs:
           MODIFIED_SERVICES=("${{ steps.modified-services.outputs.services }}")
 
           for folder in "${MODIFIED_SERVICES[@]}"; do
-            if [ -d "$folder" ]; then
-              (cd "$folder" && npm install)
-            else
-              echo "Folder $folder not found."
-            fi
+            echo "Installing packages in $folder"
+            cd "$folder" && npm install
             cd ..
           done
 
