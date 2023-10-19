@@ -105,3 +105,11 @@ jobs:
       #   run: |
       #     git tag v$GITHUB_RUN_NUMBER
       #     git push origin v$GITHUB_RUN_NUMBER
+
+      - name: Create Tag with Pull request number
+        run: |
+          # Replace with your desired tag name and other commands
+          git tag v$PR_NUMBER
+          git push origin v$PR_NUMBER
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}

@@ -1,9 +1,8 @@
-name: Github Action workflow for deploying multiple services - poc
+name: deploy-dev
 
 on:
   push:
     branches:
-      - main
       - dev
 
 jobs:
