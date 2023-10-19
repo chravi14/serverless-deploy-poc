@@ -9,10 +9,7 @@ export const hello = async (event, context, callback) => {
     {
       id: uid,
       message: "9. Generated using short-unique-id pkg",
-      bucketNames: [
-        process.env.serviceBS3BucketName,
-        process.env.serviceCS3BucketName,
-      ],
+      bucketNames: `${process.env.serviceBS3BucketName} ${process.env.serviceCS3BucketName}`,
     },
     undefined
   );
