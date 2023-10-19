@@ -1,0 +1,100 @@
+name: Github Action workflow for creating changeset for multiple services
+
+on:
+  pull_request:
+    branches:
+      - dev
+
+jobs:
+  detect-changes:
+    name: Job to Detect changed folder or files
+    runs-on: ubuntu-latest
+    outputs:
+      modified_files: ${{ steps.modified.outputs.all_changed_files }}
+      modified_folders: ${{steps.filter.outputs.modified_folders}}
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+
+      - name: Get Changed files
+        id: modified
+        uses: tj-actions/changed-files@v35
+
+      - name: Set matrix for build
+        id: modified-services
+        run: |
+          MODIFIED_SERVICES=()
+          for file in ${{ steps.modified.outputs.all_changed_files }}
+          do
+            directory="$( echo $file | cut -d'/' -f1 -s )"
+            if [[ "$directory" != ".github" && "$directory" != "" && "$directory" != "shared" ]]
+            then
+              if [[ ! "${MODIFIED_SERVICES[@]}" =~ "$directory" ]]
+              then
+                MODIFIED_SERVICES+=("$directory")
+              fi
+            fi
+          done
+          echo "Modified services: ${MODIFIED_SERVICES[@]}"
+          echo "::set-output name=services::${MODIFIED_SERVICES[@]}"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 14
+
+      - name: Install serverless framework
+        run: npm install -g serverless@3
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_DEV }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEV }}
+          aws-region: us-east-1
+
+      - name: Serverless Authentication
+        run: sls config credentials --provider aws --key ${{ env.AWS_ACCESS_KEY_ID }} --secret ${{ env.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Install packages in root folder
+        run: |
+          if [ -e yarn.lock ]; then
+            yarn install --frozen-lockfile
+          elif [ -e package-lock.json ]; then
+            npm ci
+          else
+            npm i --also=dev
+          fi
+
+      - name: Install Dependencies in modified service folders
+        run: |
+          # List of folders in which you want to run npm install
+          MODIFIED_SERVICES=("${{ steps.modified-services.outputs.services }}")
+          for service in ${MODIFIED_SERVICES[@]}
+          do
+            echo "Installing packages in $service"
+            cd $service && npm install
+            cd ..
+          done
+
+      - name: Create changeset for modified services
+        run: |
+          # Parse the modified services from the previous step
+          MODIFIED_SERVICES=("${{ steps.modified-services.outputs.services }}")
+          echo "Modified services: ${MODIFIED_SERVICES[@]}"
+
+          create_package() {
+            local service=$1
+            echo "Creating changeset for $service"
+            cd $service && serverless package
+            echo "Deploy artifacts to S3 bucket"
+            aws s3 sync .serverless/ s3://backend-deployment-artifacts/builds/$GITHUB_RUN_ID/$service
+            echo "Changing to root directory"
+            cd ../
+          }
+
+          for service in ${MODIFIED_SERVICES[@]}
+          do
+              echo "Initializing deploy for $service"
+              create_package $service
+          done
