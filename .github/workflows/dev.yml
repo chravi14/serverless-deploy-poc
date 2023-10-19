@@ -71,10 +71,10 @@ jobs:
         run: |
           # List of folders in which you want to run npm install
           MODIFIED_SERVICES=("${{ steps.modified-services.outputs.services }}")
-
-          for folder in "${MODIFIED_SERVICES[@]}"; do
-            echo "Installing packages in $folder"
-            cd "$folder" && npm install
+          for service in ${MODIFIED_SERVICES[@]}
+          do
+            echo "Installing packages in $service"
+            cd $service && npm install
             cd ..
           done
 
