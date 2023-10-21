@@ -57,6 +57,8 @@ plugins:
   - serverless-domain-manager
 
 custom:
+  bundle:
+    externals: all
   dynamodb:
     # If you only want to use DynamoDB Local in some stages, declare them here
     stages:

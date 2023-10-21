@@ -46,6 +46,8 @@ plugins:
   - serverless-domain-manager
 
 custom:
+  bundle:
+    externals: all
   customDomain:
     domainName: api-dev.ravilearnings.com
     basePath: "v1/service-b" # This will be prefixed to all routes
