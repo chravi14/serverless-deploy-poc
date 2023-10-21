@@ -30,6 +30,9 @@ plugins:
   - serverless-domain-manager
 
 custom:
+  serverless-offline:
+    httpPort: 8084
+    lambdaPort: 3004
   customDomain:
     domainName: api-dev.ravilearnings.com
     basePath: "v1/service-d" # This will be prefixed to all routes
