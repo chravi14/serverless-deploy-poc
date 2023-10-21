@@ -1,0 +1,58 @@
+service: service-b
+frameworkVersion: "3"
+
+provider:
+  name: aws
+  runtime: nodejs14.x
+  stage: ${opt:stage, 'dev'}
+  region: us-east-1
+
+params:
+  local:
+    usersTableName: users-tbl-local
+  dev:
+    usersTableName:
+      Fn::ImportValue: !Sub ServiceCUsersTable-${self:provider.stage}
+
+functions:
+  hello:
+    handler: handler.hello
+    environment:
+      usersTableName: ${param:usersTableName}
+    events:
+      - http:
+          method: GET
+          path: /hello
+          cors: true
+
+resources:
+  Resources:
+    NewResource:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:service}-my-new-bucket-${self:provider.stage}
+
+  Outputs:
+    ServiceBS3Bucket:
+      Description: ServiceB S3 bucket
+      Value: !Ref NewResource
+      Export:
+        Name: ServiceBS3Bucket-${self:provider.stage}
+
+plugins:
+  - serverless-bundle
+  - serverless-iam-roles-per-function
+  - serverless-offline
+  - serverless-domain-manager
+
+custom:
+  customDomain:
+    domainName: api-dev.ravilearnings.com
+    basePath: "v1/service-b" # This will be prefixed to all routes
+    stage: ${self:provider.stage}
+    certificateName: api-dev.ravilearnings.com
+    createRoute53Record: false
+    endpointType: regional
+  serverless-offline:
+    httpPort: 8082
+    lambdaPort: 3002

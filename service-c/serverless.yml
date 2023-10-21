@@ -1,0 +1,81 @@
+service: service-c
+frameworkVersion: "3"
+
+provider:
+  name: aws
+  runtime: nodejs14.x
+  stage: ${opt:stage, 'dev'}
+  region: us-east-1
+
+functions:
+  hello:
+    handler: handler.hello
+    events:
+      - http:
+          method: GET
+          path: /hello
+          cors: true
+
+resources:
+  Resources:
+    NewResource:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:service}-my-new-bucket-${self:provider.stage}
+
+    UsersTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: users-tbl-${self:provider.stage}
+        AttributeDefinitions:
+          - AttributeName: email
+            AttributeType: S
+        KeySchema:
+          - AttributeName: email
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+
+  Outputs:
+    ServiceCS3Bucket:
+      Description: ServiceC S3 bucket
+      Value: !Ref NewResource
+      Export:
+        Name: ServiceCS3Bucket-${self:provider.stage}
+    ServiceCUsersTable:
+      Description: ServiceC Users Table
+      Value: !Ref UsersTable
+      Export:
+        Name: ServiceCUsersTable-${self:provider.stage}
+
+plugins:
+  - serverless-bundle
+  - serverless-iam-roles-per-function
+  - serverless-dynamodb-local
+  - serverless-offline
+  - serverless-domain-manager
+
+custom:
+  dynamodb:
+    # If you only want to use DynamoDB Local in some stages, declare them here
+    stages:
+      - local
+    start:
+      port: 8000
+      inMemory: true
+      heapInitial: 200m
+      heapMax: 1g
+      migrate: true
+      seed: true
+      convertEmptyValues: true
+  customDomain:
+    domainName: api-dev.ravilearnings.com
+    basePath: "v1/service-c" # This will be prefixed to all routes
+    stage: ${self:provider.stage}
+    certificateName: api-dev.ravilearnings.com
+    createRoute53Record: false
+    endpointType: regional
+  serverless-offline:
+    httpPort: 8083
+    lambdaPort: 3003

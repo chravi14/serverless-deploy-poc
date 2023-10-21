@@ -1,41 +1,48 @@
-name: Github Action workflow for deploying multiple services - poc
+name: deploy-workflow
 
 on:
-  push:
-    branches:
-      - main
-      - dev
+  workflow_dispatch:
+    inputs:
+      build:
+        description: "Build Number"
+        required: true
+      environment:
+        type: choice
+        description: "Choose Environment"
+        required: true
+        options:
+          - "dev"
+          - "prod"
 
 jobs:
   detect-changes:
-    name: Job to Detect changed folder or files
+    name: Deployment to specified environment
     runs-on: ubuntu-latest
-    outputs:
-      modified_files: ${{ steps.modified.outputs.all_changed_files }}
-      modified_folders: ${{steps.filter.outputs.modified_folders}}
+    env:
+      BUILD_NUMBER: ${{ github.event.inputs.build }}
+      ENVIORNMENT: ${{ github.event.inputs.environment }}
+      PACKAGE_PATH: s3://backend-deployment-artifacts/builds/${{ github.event.inputs.build }}
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
 
-      - name: Get Changed files
-        id: modified
-        uses: tj-actions/changed-files@v35
+      - name: Install serverless framework
+        run: npm install -g serverless@3
 
-      - name: Set matrix for build
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_DEV }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEV }}
+          aws-region: us-east-1
+
+      - name: Serverless Authentication
+        run: sls config credentials --provider aws --key ${{ env.AWS_ACCESS_KEY_ID }} --secret ${{ env.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Get list of S3 folders
         id: modified-services
         run: |
-          MODIFIED_SERVICES=()
-          for file in ${{ steps.modified.outputs.all_changed_files }}
-          do
-            directory="$( echo $file | cut -d'/' -f1 -s )"
-            if [[ "$directory" != ".github" && "$directory" != "" && "$directory" != "shared" ]]
-            then
-              if [[ ! "${MODIFIED_SERVICES[@]}" =~ "$directory" ]]
-              then
-                MODIFIED_SERVICES+=("$directory")
-              fi
-            fi
-          done
+          MODIFIED_SERVICES=$(aws s3 ls $PACKAGE_PATH/ --recursive | grep '/' | cut -d'/' -f2 | sort -u)
           echo "Modified services: ${MODIFIED_SERVICES[@]}"
           echo "::set-output name=services::${MODIFIED_SERVICES[@]}"
 
@@ -45,12 +52,15 @@ jobs:
           MODIFIED_SERVICES=("${{ steps.modified-services.outputs.services }}")
           echo "Modified services: ${MODIFIED_SERVICES[@]}"
 
+          SERVICE_DEPENDENCIES=$(cat service-dependencies.json)
+
           # Initialize a set to keep track of deployed services and dependencies
           DEPLOYED=()
 
           deploy_service() {
               local service=$1
               local dependencies=($(jq -r --arg key "$service" '.[$key] | .[]' service-dependencies.json))
+              # local dependencies=${SERVICE_DEPENDENCIES[$service]}
               
               for dependency in ${dependencies[@]}
               do
@@ -71,6 +81,7 @@ jobs:
               if [[ ! "${DEPLOYED[@]}" =~ "$service" ]] && [[ "${MODIFIED_SERVICES[@]}" =~ "$service" ]]
               then
                   echo "Deploying service: $service"
+                  serverless deploy --stage $ENVIORNMENT --package $PACKAGE_PATH/$service --verbose
                   DEPLOYED+=("$service")
               else
                   echo "$service already deployed or not in modified list"
