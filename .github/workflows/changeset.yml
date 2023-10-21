@@ -3,7 +3,7 @@ name: Github Action workflow for creating changeset for multiple services
 on:
   pull_request:
     branches:
-      - dev
+      - main
 
 jobs:
   detect-changes:
