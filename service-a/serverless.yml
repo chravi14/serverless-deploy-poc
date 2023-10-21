@@ -7,14 +7,18 @@ provider:
   stage: ${opt:stage, 'dev'}
   region: us-east-1
 
+params:
+  local:
+    usersTableName: users-tbl-local
+  dev:
+    usersTableName:
+      Fn::ImportValue: !Sub ServiceCUsersTable-${self:provider.stage}
+
 functions:
   hello:
     handler: handler.hello
     environment:
-      serviceBS3BucketName:
-        Fn::ImportValue: !Sub ServiceBS3Bucket-${self:provider.stage}
-      serviceCS3BucketName:
-        Fn::ImportValue: !Sub ServiceCS3Bucket-${self:provider.stage}
+      usersTableName: ${param:usersTableName}
     events:
       - http:
           method: GET
@@ -31,8 +35,8 @@ resources:
 plugins:
   - serverless-bundle
   - serverless-iam-roles-per-function
-  - serverless-offline
   - serverless-domain-manager
+  - serverless-offline
 
 custom:
   customDomain:
@@ -42,3 +46,6 @@ custom:
     certificateName: api-dev.ravilearnings.com
     createRoute53Record: false
     endpointType: regional
+  serverless-offline:
+    httpPort: 8081
+    lambdaPort: 3001

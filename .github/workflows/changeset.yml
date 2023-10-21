@@ -17,6 +17,8 @@ jobs:
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
+        # with:
+        # persist-credentials: false
 
       - name: Get Changed files
         id: modified
@@ -45,6 +47,8 @@ jobs:
         with:
           node-version: 14
 
+      - run: git config --global url."https://${{ secrets.GH_PAT }}@github.com/".insteadOf ssh://git@github.com/
+
       - name: Install serverless framework
         run: npm install -g serverless@3
 
@@ -67,6 +71,8 @@ jobs:
           else
             npm i --also=dev
           fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
 
       - name: Install Dependencies in modified service folders
         run: |
@@ -110,6 +116,6 @@ jobs:
         run: |
           # Replace with your desired tag name and other commands
           git tag v$PR_NUMBER
-          git push origin v$PR_NUMBER
+          git push origin v$PR_NUMBER -f
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
