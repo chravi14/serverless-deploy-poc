@@ -81,7 +81,9 @@ jobs:
               if [[ ! "${DEPLOYED[@]}" =~ "$service" ]] && [[ "${MODIFIED_SERVICES[@]}" =~ "$service" ]]
               then
                   echo "Deploying service: $service"
-                  serverless deploy --stage $ENVIORNMENT --package $PACKAGE_PATH/$service/$service.zip --verbose
+                  cd $service
+                  serverless deploy --stage $ENVIORNMENT --package $PACKAGE_PATH/$service --verbose
+                  cd ../
                   DEPLOYED+=("$service")
               else
                   echo "$service already deployed or not in modified list"
