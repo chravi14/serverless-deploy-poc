@@ -30,6 +30,8 @@ plugins:
   - serverless-domain-manager
 
 custom:
+  bundle:
+    externals: all
   serverless-offline:
     httpPort: 8084
     lambdaPort: 3004
