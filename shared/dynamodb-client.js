@@ -1,0 +1,42 @@
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
+
+const marshallOptions = {
+  // Whether to automatically convert empty strings, blobs, and sets to `null`.
+  convertEmptyValues: false, // false, by default.
+  // Whether to remove undefined values while marshalling.
+  removeUndefinedValues: true, // false, by default.
+  // Whether to convert typeof object to map attribute.
+  convertClassInstanceToMap: false, // false, by default.
+};
+
+const unmarshallOptions = {
+  // Whether to return numbers as a string instead of converting them to native JavaScript numbers.
+  wrapNumbers: false, // false, by default.
+};
+
+const translateConfig = { marshallOptions, unmarshallOptions };
+
+let client;
+
+if (process.env.IS_OFFLINE) {
+  client = new DynamoDBClient({
+    region: "localhost",
+    endpoint: "http://localhost:8000",
+    credentials: {
+      accessKeyId: "dummyKey123",
+      secretAccessKey: "dummyKey123",
+    },
+  });
+} else {
+  client = new DynamoDBClient({
+    region: "us-east-1",
+  });
+}
+
+const dynamoDBDocumentClient = DynamoDBDocumentClient.from(
+  client,
+  translateConfig
+); // client is DynamoDB client
+
+export { dynamoDBDocumentClient };

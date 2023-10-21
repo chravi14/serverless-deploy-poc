@@ -4,14 +4,23 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "service-a-offline": "cd service-a && serverless offline start --stage local",
+    "service-b-offline": "cd service-b && serverless offline start --stage local",
+    "service-c-offline": "cd service-c && serverless offline start --stage local",
+    "service-d-offline": "cd service-d && serverless offline start --stage local",
+    "offline": "concurrently --kill-others \"npm run service-d-offline\" \"npm run service-c-offline\" \"npm run service-b-offline\" \"npm run service-a-offline\"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@aws-sdk/client-dynamodb": "^3.431.0",
+    "@aws-sdk/lib-dynamodb": "^3.431.0",
+    "concurrently": "^8.2.2",
     "serverless-bundle": "^6.0.0",
     "serverless-domain-manager": "^7.1.2",
+    "serverless-dynamodb-local": "https://github.com/eheyder/serverless-dynamodb-local.git#v1",
     "serverless-iam-roles-per-function": "^3.2.0",
     "serverless-offline": "^8.8.1"
   },
