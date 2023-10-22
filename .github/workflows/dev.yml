@@ -39,17 +39,18 @@ jobs:
       - name: Serverless Authentication
         run: sls config credentials --provider aws --key ${{ env.AWS_ACCESS_KEY_ID }} --secret ${{ env.AWS_SECRET_ACCESS_KEY }}
 
-      - name: Get list of S3 folders
-        id: modified-services
-        run: |
-          MODIFIED_SERVICES=$(aws s3 ls $PACKAGE_PATH/ --recursive | grep '/' | cut -d'/' -f3 | sort -u)
-          echo "Modified services: ${MODIFIED_SERVICES[@]}"
-          echo "::set-output name=services::${MODIFIED_SERVICES[@]}"
+      # - name: Get list of S3 folders
+      #   id: modified-services
+      #   run: |
+      #     MODIFIED_SERVICES=$(aws s3 ls $PACKAGE_PATH/ --recursive | grep '/' | cut -d'/' -f3 | sort -u)
+      #     echo "Modified services: ${MODIFIED_SERVICES[@]}"
+      #     echo "::set-output name=services::${MODIFIED_SERVICES[@]}"
 
       - name: Deployment
         run: |
           # Parse the modified services from the previous step
-          MODIFIED_SERVICES=("${{ steps.modified-services.outputs.services }}")
+          # MODIFIED_SERVICES=("${{ steps.modified-services.outputs.services }}")
+          MODIFIED_SERVICES=$(aws s3 ls $PACKAGE_PATH/ --recursive | grep '/' | cut -d'/' -f3 | sort -u)
           echo "Modified services: ${MODIFIED_SERVICES[@]}"
 
           SERVICE_DEPENDENCIES=$(cat service-dependencies.json)
