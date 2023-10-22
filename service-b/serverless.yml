@@ -1,10 +1,6 @@
 service: service-b
 frameworkVersion: "3"
 
-# package:
-#   excludeDevDependencies: false
-#   artifact: .serverless/service-b.zip
-
 provider:
   name: aws
   runtime: nodejs14.x
@@ -50,8 +46,6 @@ plugins:
   - serverless-domain-manager
 
 custom:
-  # bundle:
-  #   externals: all
   customDomain:
     domainName: api-dev.ravilearnings.com
     basePath: "v1/service-b" # This will be prefixed to all routes

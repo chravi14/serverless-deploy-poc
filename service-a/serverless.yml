@@ -13,6 +13,9 @@ params:
   dev:
     usersTableName:
       Fn::ImportValue: !Sub ServiceCUsersTable-${self:provider.stage}
+  prod:
+    usersTableName:
+      Fn::ImportValue: !Sub ServiceCUsersTable-${self:provider.stage}
 
 functions:
   hello:
@@ -39,8 +42,6 @@ plugins:
   - serverless-offline
 
 custom:
-  # bundle:
-  #   externals: all
   customDomain:
     domainName: api-dev.ravilearnings.com
     basePath: "v1/service-a" # This will be prefixed to all routes

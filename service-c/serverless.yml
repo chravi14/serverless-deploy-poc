@@ -1,10 +1,6 @@
 service: service-c
 frameworkVersion: "3"
 
-# package:
-#   excludeDevDependencies: false
-#   artifact: .serverless/service-c.zip
-
 provider:
   name: aws
   runtime: nodejs14.x
@@ -61,8 +57,6 @@ plugins:
   - serverless-domain-manager
 
 custom:
-  # bundle:
-  #   externals: all
   dynamodb:
     # If you only want to use DynamoDB Local in some stages, declare them here
     stages:
