@@ -29,6 +29,18 @@ jobs:
       - name: Install serverless framework
         run: npm install -g serverless@3
 
+      - name: Install packages in root folder
+        run: |
+          if [ -e yarn.lock ]; then
+            yarn install --frozen-lockfile
+          elif [ -e package-lock.json ]; then
+            npm ci
+          else
+            npm i --also=dev
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
