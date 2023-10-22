@@ -28,7 +28,7 @@ export const hello = async (event, context, callback) => {
     200,
     {
       id: uid,
-      message: "15. Generated using short-unique-id pkg",
+      message: "17. Generated using short-unique-id pkg",
       user: user,
     },
     undefined
