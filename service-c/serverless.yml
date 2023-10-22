@@ -1,6 +1,9 @@
 service: service-c
 frameworkVersion: "3"
 
+package:
+  artifact: .serverless/service-c.zip
+
 provider:
   name: aws
   runtime: nodejs14.x
