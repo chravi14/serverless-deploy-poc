@@ -1,6 +1,9 @@
 service: service-a
 frameworkVersion: "3"
 
+package:
+  artifact: .serverless/service-a.zip
+
 provider:
   name: aws
   runtime: nodejs14.x
