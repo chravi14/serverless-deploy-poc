@@ -1,10 +1,6 @@
 service: service-d
 frameworkVersion: "3"
 
-# package:
-#   excludeDevDependencies: false
-#   artifact: .serverless/service-d.zip
-
 provider:
   name: aws
   runtime: nodejs14.x
@@ -34,8 +30,6 @@ plugins:
   - serverless-domain-manager
 
 custom:
-  # bundle:
-  #   externals: all
   serverless-offline:
     httpPort: 8084
     lambdaPort: 3004

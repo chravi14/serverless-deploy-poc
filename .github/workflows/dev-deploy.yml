@@ -1,0 +1,115 @@
+name: dev-deploy-workflow
+
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  deploy:
+    name: Deploy to DEV environment
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+
+      - name: Get Changed files
+        id: modified
+        uses: tj-actions/changed-files@v35
+
+      - name: Get Modified services
+        id: modified-services
+        run: |
+          MODIFIED_SERVICES=()
+          for file in ${{ steps.modified.outputs.all_changed_files }}
+          do
+            directory="$( echo $file | cut -d'/' -f1 -s )"
+            if [[ "$directory" != ".github" && "$directory" != "" && "$directory" != "shared" ]]
+            then
+              if [[ ! "${MODIFIED_SERVICES[@]}" =~ "$directory" ]]
+              then
+                MODIFIED_SERVICES+=("$directory")
+              fi
+            fi
+          done
+          echo "Modified services: ${MODIFIED_SERVICES[@]}"
+          echo "::set-output name=services::${MODIFIED_SERVICES[@]}"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 14
+
+      - name: Install serverless framework
+        run: npm install -g serverless@3
+
+      - name: Set Github Secret token to download dependenices
+        run: git config --global url."https://${{ secrets.GH_PAT }}@github.com/".insteadOf ssh://git@github.com/
+
+      - name: Install packages in root folder
+        run: |
+          if [ -e yarn.lock ]; then
+            yarn install --frozen-lockfile
+          elif [ -e package-lock.json ]; then
+            npm ci
+          else
+            npm i --also=dev
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_DEV }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEV }}
+          aws-region: us-east-1
+
+      - name: Serverless Authentication
+        run: sls config credentials --provider aws --key ${{ env.AWS_ACCESS_KEY_ID }} --secret ${{ env.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Deployment
+        run: |
+          # Parse the modified services from the previous step
+          MODIFIED_SERVICES=("${{ steps.modified-services.outputs.services }}")
+          SERVICE_DEPENDENCIES=$(cat service-dependencies.json)
+
+          # Initialize a set to keep track of deployed services and dependencies
+          DEPLOYED=()
+
+          deploy_service() {
+              local service=$1
+              local dependencies=($(jq -r --arg key "$service" '.[$key] | .[]' service-dependencies.json))
+              
+              for dependency in ${dependencies[@]}
+              do
+                  if [[ ! "${DEPLOYED[@]}" =~ "$dependency" ]] && [[ "${MODIFIED_SERVICES[@]}" =~ "$dependency" ]]
+                  then
+                      echo "$dependency is not deployed and is in modified list - deploying it"
+                      deploy_service $dependency
+                      DEPLOYED+=("$dependency")
+                  elif [[ "${DEPLOYED[@]}" =~ "$dependency" ]]
+                  then
+                      echo "$dependency is already deployed, so skipping"
+                  else
+                      echo "$dependency is not in modified services, so not deploying"
+                  fi
+              done
+
+              if [[ ! "${DEPLOYED[@]}" =~ "$service" ]] && [[ "${MODIFIED_SERVICES[@]}" =~ "$service" ]]
+              then
+                  echo "Deploying service: $service"
+                  cd $service
+                  serverless deploy --stage dev --verbose
+                  cd ../
+                  DEPLOYED+=("$service")
+              else
+                  echo "$service already deployed or not in modified list"
+              fi
+          }
+
+          for service in ${MODIFIED_SERVICES[@]}
+          do
+              echo "Initializing deploy for $service"
+              deploy_service $service
+          done

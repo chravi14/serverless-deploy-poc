@@ -11,7 +11,7 @@ export const hello = async (event, context, callback) => {
     const params = {
       TableName: usersTableName,
       Item: {
-        email: "test@test.com",
+        email: "test1@test.com",
       },
     };
 
