@@ -2,6 +2,7 @@ service: service-c
 frameworkVersion: "3"
 
 package:
+  excludeDevDependencies: false
   artifact: .serverless/service-c.zip
 
 provider:

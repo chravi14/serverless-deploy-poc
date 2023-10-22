@@ -2,6 +2,7 @@ service: service-b
 frameworkVersion: "3"
 
 package:
+  excludeDevDependencies: false
   artifact: .serverless/service-b.zip
 
 provider:
