@@ -2,6 +2,7 @@ service: service-a
 frameworkVersion: "3"
 
 package:
+  excludeDevDependencies: false
   artifact: .serverless/service-a.zip
 
 provider:
