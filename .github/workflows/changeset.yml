@@ -81,7 +81,7 @@ jobs:
           for service in ${MODIFIED_SERVICES[@]}
           do
             echo "Installing packages in $service"
-            cd $service && npm install --also=dev
+            cd $service && npm install
             cd ..
           done
 
