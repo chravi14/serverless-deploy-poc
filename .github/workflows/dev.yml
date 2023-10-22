@@ -95,7 +95,7 @@ jobs:
               then
                   echo "Deploying service: $service"
                   cd $service
-                  serverless deploy --stage $ENVIORNMENT --package $PACKAGE_PATH/$service --verbose
+                  serverless deploy --stage $ENVIORNMENT --package $PACKAGE_PATH/$service.zip --verbose
                   cd ../
                   DEPLOYED+=("$service")
               else

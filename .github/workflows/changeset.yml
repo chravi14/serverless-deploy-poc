@@ -96,7 +96,7 @@ jobs:
             echo "Creating changeset for $service"
             cd $service && serverless package
             echo "Deploy artifacts to S3 bucket"
-            aws s3 sync .serverless/ s3://backend-deployment-artifacts/builds/$PR_NUMBER/$service
+            aws s3 sync .serverless/ s3://backend-deployment-artifacts/builds/$PR_NUMBER/$service.zip
             echo "Changing to root directory"
             cd ../
           }
