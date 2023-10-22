@@ -2,6 +2,7 @@ service: service-d
 frameworkVersion: "3"
 
 package:
+  excludeDevDependencies: false
   artifact: .serverless/service-d.zip
 
 provider:
