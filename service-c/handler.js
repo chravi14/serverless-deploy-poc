@@ -31,7 +31,7 @@ export const testAuthorizerEndpoint = async (event, context, callback) => {
   callback(
     null,
     formatResponse(200, {
-      message: "Successfully called test authorize endpoint",
+      message: "Successfully called test authorize endpoint - test",
       data: clientId,
     })
   );
