@@ -21,16 +21,16 @@ functions:
     environment:
       userPoolId: ${param:userPoolId}
       clientId: ${param:clientId}
-  # TestCembooAuthorizerEndpoint:
-  #   handler: handler.testAuthorizerEndpoint
-  #   events:
-  #     - http:
-  #         method: GET
-  #         path: test
-  #         authorizer:
-  #           type: TOKEN
-  #           name: AuthorizerFunc
-  #           arn: !GetAtt AuthorizerFunc.Arn
+  TestCembooAuthorizerEndpoint:
+    handler: handler.testAuthorizerEndpoint
+    events:
+      - http:
+          method: GET
+          path: test
+          authorizer:
+            type: TOKEN
+            name: AuthorizerFunc
+            arn: !GetAtt AuthorizerFunc.Arn
 
 resources:
   Resources:
