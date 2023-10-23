@@ -13,6 +13,9 @@ params:
   dev:
     usersTableName:
       Fn::ImportValue: !Sub ServiceCUsersTable-${self:provider.stage}
+  prod:
+    usersTableName:
+      Fn::ImportValue: !Sub ServiceCUsersTable-${self:provider.stage}
 
 functions:
   hello:

@@ -11,7 +11,7 @@ export const hello = async (event, context, callback) => {
     const params = {
       TableName: usersTableName,
       Item: {
-        email: "test@test.com",
+        email: "test1@test.com",
       },
     };
 
@@ -25,7 +25,7 @@ export const hello = async (event, context, callback) => {
 
   return formatResponse(
     200,
-    { id: uid?.toRaw(), message: "10. Generated using uniqid pkg", user },
+    { id: uid?.toRaw(), message: "14. Generated using uniqid pkg", user },
     undefined
   );
 };

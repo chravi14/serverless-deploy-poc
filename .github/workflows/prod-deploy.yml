@@ -1,33 +1,62 @@
-name: deploy-workflow
+name: prod-deploy-workflow
 
 on:
-  workflow_dispatch:
-    inputs:
-      build:
-        description: "Build Number"
-        required: true
-      environment:
-        type: choice
-        description: "Choose Environment"
-        required: true
-        options:
-          - "dev"
-          - "prod"
+  push:
+    branches:
+      - main
 
 jobs:
-  detect-changes:
-    name: Deployment to specified environment
+  deploy:
+    name: Deploy to PROD environment
     runs-on: ubuntu-latest
-    env:
-      BUILD_NUMBER: ${{ github.event.inputs.build }}
-      ENVIORNMENT: ${{ github.event.inputs.environment }}
-      PACKAGE_PATH: s3://backend-deployment-artifacts/builds/${{ github.event.inputs.build }}
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
 
+      - name: Get Changed files
+        id: modified
+        uses: tj-actions/changed-files@v35
+
+      - name: Get Modified services
+        id: modified-services
+        run: |
+          MODIFIED_SERVICES=()
+          for file in ${{ steps.modified.outputs.all_changed_files }}
+          do
+            directory="$( echo $file | cut -d'/' -f1 -s )"
+            if [[ "$directory" != ".github" && "$directory" != "" && "$directory" != "shared" ]]
+            then
+              if [[ ! "${MODIFIED_SERVICES[@]}" =~ "$directory" ]]
+              then
+                MODIFIED_SERVICES+=("$directory")
+              fi
+            fi
+          done
+          echo "Modified services: ${MODIFIED_SERVICES[@]}"
+          echo "::set-output name=services::${MODIFIED_SERVICES[@]}"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 14
+
       - name: Install serverless framework
         run: npm install -g serverless@3
+
+      - name: Set Github Secret token to download dependenices
+        run: git config --global url."https://${{ secrets.GH_PAT }}@github.com/".insteadOf ssh://git@github.com/
+
+      - name: Install packages in root folder
+        run: |
+          if [ -e yarn.lock ]; then
+            yarn install --frozen-lockfile
+          elif [ -e package-lock.json ]; then
+            npm ci
+          else
+            npm i --also=dev
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -39,19 +68,10 @@ jobs:
       - name: Serverless Authentication
         run: sls config credentials --provider aws --key ${{ env.AWS_ACCESS_KEY_ID }} --secret ${{ env.AWS_SECRET_ACCESS_KEY }}
 
-      - name: Get list of S3 folders
-        id: modified-services
-        run: |
-          MODIFIED_SERVICES=$(aws s3 ls $PACKAGE_PATH/ --recursive | grep '/' | cut -d'/' -f2 | sort -u)
-          echo "Modified services: ${MODIFIED_SERVICES[@]}"
-          echo "::set-output name=services::${MODIFIED_SERVICES[@]}"
-
       - name: Deployment
         run: |
           # Parse the modified services from the previous step
           MODIFIED_SERVICES=("${{ steps.modified-services.outputs.services }}")
-          echo "Modified services: ${MODIFIED_SERVICES[@]}"
-
           SERVICE_DEPENDENCIES=$(cat service-dependencies.json)
 
           # Initialize a set to keep track of deployed services and dependencies
@@ -60,13 +80,12 @@ jobs:
           deploy_service() {
               local service=$1
               local dependencies=($(jq -r --arg key "$service" '.[$key] | .[]' service-dependencies.json))
-              # local dependencies=${SERVICE_DEPENDENCIES[$service]}
               
               for dependency in ${dependencies[@]}
               do
                   if [[ ! "${DEPLOYED[@]}" =~ "$dependency" ]] && [[ "${MODIFIED_SERVICES[@]}" =~ "$dependency" ]]
                   then
-                      echo "$dependency is not deployed and is in modified list - so deploying it"
+                      echo "$dependency is not deployed and is in modified list - deploying it"
                       deploy_service $dependency
                       DEPLOYED+=("$dependency")
                   elif [[ "${DEPLOYED[@]}" =~ "$dependency" ]]
@@ -77,11 +96,12 @@ jobs:
                   fi
               done
 
-              
               if [[ ! "${DEPLOYED[@]}" =~ "$service" ]] && [[ "${MODIFIED_SERVICES[@]}" =~ "$service" ]]
               then
                   echo "Deploying service: $service"
-                  serverless deploy --stage $ENVIORNMENT --package $PACKAGE_PATH/$service --verbose
+                  cd $service
+                  serverless deploy --stage prod --verbose
+                  cd ../
                   DEPLOYED+=("$service")
               else
                   echo "$service already deployed or not in modified list"

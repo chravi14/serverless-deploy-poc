@@ -1,30 +1,24 @@
-name: Github Action workflow for creating changeset for multiple services
+name: build-workflow
 
 on:
   pull_request:
     branches:
       - dev
+      - main
 
 jobs:
-  detect-changes:
-    name: Job to Detect changed folder or files
+  build:
+    name: Job to build the modified services
     runs-on: ubuntu-latest
-    env:
-      PR_NUMBER: ${{ github.event.number }}
-    outputs:
-      modified_files: ${{ steps.modified.outputs.all_changed_files }}
-      modified_folders: ${{steps.filter.outputs.modified_folders}}
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
-        # with:
-        # persist-credentials: false
 
       - name: Get Changed files
         id: modified
         uses: tj-actions/changed-files@v35
 
-      - name: Set matrix for build
+      - name: Get Modified services
         id: modified-services
         run: |
           MODIFIED_SERVICES=()
@@ -47,22 +41,13 @@ jobs:
         with:
           node-version: 14
 
-      - run: git config --global url."https://${{ secrets.GH_PAT }}@github.com/".insteadOf ssh://git@github.com/
+      - name: Set Github Secret token to download dependenices
+        run: git config --global url."https://${{ secrets.GH_PAT }}@github.com/".insteadOf ssh://git@github.com/
 
       - name: Install serverless framework
         run: npm install -g serverless@3
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_DEV }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEV }}
-          aws-region: us-east-1
-
-      - name: Serverless Authentication
-        run: sls config credentials --provider aws --key ${{ env.AWS_ACCESS_KEY_ID }} --secret ${{ env.AWS_SECRET_ACCESS_KEY }}
-
-      - name: Install packages in root folder
+      - name: Install dependencies in root folder
         run: |
           if [ -e yarn.lock ]; then
             yarn install --frozen-lockfile
@@ -74,7 +59,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
 
-      - name: Install Dependencies in modified service folders
+      - name: Install dependencies in modified service folders
         run: |
           # List of folders in which you want to run npm install
           MODIFIED_SERVICES=("${{ steps.modified-services.outputs.services }}")
@@ -85,37 +70,32 @@ jobs:
             cd ..
           done
 
-      - name: Create changeset for modified services
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_DEV }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEV }}
+          aws-region: us-east-1
+
+      - name: Serverless Authentication
+        run: sls config credentials --provider aws --key ${{ env.AWS_ACCESS_KEY_ID }} --secret ${{ env.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Build the application
         run: |
           # Parse the modified services from the previous step
           MODIFIED_SERVICES=("${{ steps.modified-services.outputs.services }}")
           echo "Modified services: ${MODIFIED_SERVICES[@]}"
 
-          create_package() {
+          build() {
             local service=$1
-            echo "Creating changeset for $service"
-            cd $service && serverless package
-            echo "Deploy artifacts to S3 bucket"
-            aws s3 sync .serverless/ s3://backend-deployment-artifacts/builds/$PR_NUMBER/$service
-            echo "Changing to root directory"
+            echo "Running build for $service"
+            cd $service && npm run build
+            echo "Switching back to root directory"
             cd ../
           }
 
           for service in ${MODIFIED_SERVICES[@]}
           do
               echo "Initializing deploy for $service"
-              create_package $service
+              build $service
           done
-
-      # - name: Create Tag with Custom Build Number
-      #   run: |
-      #     git tag v$GITHUB_RUN_NUMBER
-      #     git push origin v$GITHUB_RUN_NUMBER
-
-      - name: Create Tag with Pull request number
-        run: |
-          # Replace with your desired tag name and other commands
-          git tag v$PR_NUMBER
-          git push origin v$PR_NUMBER -f
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
