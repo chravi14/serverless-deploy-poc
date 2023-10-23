@@ -1,6 +1,14 @@
 service: service-c
 frameworkVersion: "3"
 
+params:
+  local:
+    userPoolId: us-east-1_VGvg5GP3x
+    clientId: 3ukik31ovm7aatqac89q93ir8h
+  dev:
+    userPoolId: us-east-1_tBnCURGtx
+    clientId: 58tpt7dqqn93660cthubor8566
+
 provider:
   name: aws
   runtime: nodejs14.x
@@ -8,13 +16,21 @@ provider:
   region: us-east-1
 
 functions:
-  hello:
+  AuthorizerFunc:
     handler: handler.hello
-    events:
-      - http:
-          method: GET
-          path: /hello
-          cors: true
+    environment:
+      userPoolId: ${param:userPoolId}
+      clientId: ${param:clientId}
+  # TestCembooAuthorizerEndpoint:
+  #   handler: handler.testAuthorizerEndpoint
+  #   events:
+  #     - http:
+  #         method: GET
+  #         path: test
+  #         authorizer:
+  #           type: TOKEN
+  #           name: AuthorizerFunc
+  #           arn: !GetAtt AuthorizerFunc.Arn
 
 resources:
   Resources:

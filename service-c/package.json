@@ -11,6 +11,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "simple-unique-id": "0.0.1"
+    "aws-jwt-verify": "^4.0.0"
   }
 }
