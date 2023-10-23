@@ -99,7 +99,7 @@ jobs:
               if [[ ! "${DEPLOYED[@]}" =~ "$service" ]] && [[ "${MODIFIED_SERVICES[@]}" =~ "$service" ]]
               then
                   echo "Deploying service: $service"
-                  cd $service
+                  cd $service && npm install
                   serverless deploy --stage dev --verbose
                   cd ../
                   DEPLOYED+=("$service")
